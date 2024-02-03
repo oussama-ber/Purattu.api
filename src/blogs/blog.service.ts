@@ -62,7 +62,7 @@ export class BlogService implements IBlogService {
       const newBlog = new this.blogModel({
         title: createBlogDto.title,
         description: createBlogDto.description,
-        status: createBlogDto.link,
+        link: createBlogDto.link,
 
         imagePath: imagePath,
         imageUrl: imageUrl,
@@ -90,7 +90,7 @@ export class BlogService implements IBlogService {
     fetchedBlog.description = updateBlogDto.description;
     fetchedBlog.link = updateBlogDto.link;
     fetchedBlog.createdBy = updateBlogDto.createdBy;
-    if (imagePath) {
+    if (imagePath && imagePath.length > 0) {
       if (fs.existsSync(`files/${fetchedBlog.imagePath}`)) {
         try {
           // Delete the file

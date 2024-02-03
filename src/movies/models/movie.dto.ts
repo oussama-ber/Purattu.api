@@ -32,11 +32,7 @@ export class UpdateProductDto {
   @IsNumber()
   price: number;
 }
-export class FetchProductDto {
+export class FetchMovieDto {
   @IsOptional()
-  title: string;
-  @IsOptional()
-  description: string;
-  @IsOptional()
-  price: number;
+  movieStatus: string;
 }

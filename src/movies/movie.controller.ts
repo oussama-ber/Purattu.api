@@ -8,13 +8,14 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { MoviesService } from './movie.service';
 import { Movie } from './models/movie.entity';
-import { CreateMovieDto } from './models/movie.dto';
+import { CreateMovieDto, FetchMovieDto } from './models/movie.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -34,8 +35,8 @@ export class MoviessController {
   // }
   @Get()
   // @UseGuards(AuthGuard())
-  async getAllMovies(): Promise<{ movies: Movie[] }> {
-    const allMovies = await this._moviessService.getAllMovies();
+  async getAllMovies(@Query() filterDto: FetchMovieDto): Promise<{ movies: Movie[] }> {
+    const allMovies = await this._moviessService.getAllMovies(filterDto);
     return { movies: allMovies };
   }
   @Get('/:movieId')
@@ -88,8 +89,8 @@ export class MoviessController {
   @Header('Content-Type', 'text/plain') // Set the Content-Type header to text/plain
   async createMoviefiletest(
     @Req() request,
-    @UploadedFile() file: Express.Multer.File,
     @Body() createMovieDto: CreateMovieDto,
+    @UploadedFile() file?: Express.Multer.File,
   ): Promise<{ filename: string , message: string}> {
     try {
       const url = `${request.protocol}://${request.get('host')}`;
@@ -125,11 +126,11 @@ export class MoviessController {
   )
   async UpdateMovie(@Req() request,@Param('movieId') movieId: string,@UploadedFile() file: Express.Multer.File, @Body() updateMovieDto: CreateMovieDto): Promise<string> {
     let filename = "";
-    if(file){
+    if(file && file != undefined){
       filename = file.filename;
     }
     const url = `${request.protocol}://${request.get('host')}`;
-    const imageUrl = url + "/images/" + file.filename;
+    const imageUrl = url + "/images/" + filename;
     return this._moviessService.updateMovie(movieId, imageUrl, filename, updateMovieDto);
   }
   @Delete('/:movieId')

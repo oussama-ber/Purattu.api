@@ -7,10 +7,10 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Movie } from './models/movie.entity';
-import { CreateMovieDto } from './models/movie.dto';
+import { CreateMovieDto, FetchMovieDto } from './models/movie.dto';
 import * as fs from 'fs';
 export interface IMoviesService {
-  getAllMovies(): Promise<Movie[]>;
+  getAllMovies(movieDTO: FetchMovieDto): Promise<Movie[]>;
   getSpecificMovie(movieId: string): Promise<Movie>;
   insertMovie(
     createMovieDto: CreateMovieDto,
@@ -41,8 +41,14 @@ export class MoviesService implements IMoviesService {
   //     })
   //     return fetchedProducts;
   //   }
-  async getAllMovies(): Promise<Movie[]> {
-    const movies = await this.movieModel.find().exec();
+  async getAllMovies(movieDTO: FetchMovieDto): Promise<Movie[]> {
+    const { movieStatus } = movieDTO;
+    let movies;
+    if(movieStatus && movieStatus.length > 0){
+       movies = await this.movieModel.find({ status: { $in: movieStatus } }).exec();
+    }else{
+      //  movies = await this.movieModel.find((el)=> el.status.toLowerCase().includes(movieStatus.toLowerCase())).exec();
+    }
     if (movies.length == 0) {
       throw new NotFoundException('No movies found.');
     }
@@ -161,7 +167,7 @@ export class MoviesService implements IMoviesService {
     fetchedMovie.producer = producerArray;
     fetchedMovie.status = updateMovieDto.status;
     fetchedMovie.awards = updateMovieDto.awards;
-    if (imagePath) {
+    if (imagePath && imagePath.length > 0) {
       if (fs.existsSync(`files/${fetchedMovie.imagePath}`)) {
         try {
           // Delete the file

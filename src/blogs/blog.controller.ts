@@ -53,8 +53,8 @@ import { Blog } from './models/blog.entity';
     @Header('Content-Type', 'text/plain') // Set the Content-Type header to text/plain
     async createBlog(
       @Req() request,
-      @UploadedFile() file: Express.Multer.File,
       @Body() createBlogDto: CreateBlogDto,
+      @UploadedFile() file?: Express.Multer.File,
     ): Promise<{ filename: string , message: string}> {
       try {
         const url = `${request.protocol}://${request.get('host')}`;
@@ -88,13 +88,14 @@ import { Blog } from './models/blog.entity';
         }),
       }),
     )
-    async UpdateBlog(@Req() request,@Param('blogId') blogId: string,@UploadedFile() file: Express.Multer.File, @Body() updateBlogDto: CreateBlogDto): Promise<string> {
+    async UpdateBlog(@Req() request,@Param('blogId') blogId: string, @Body() updateBlogDto: CreateBlogDto, @UploadedFile() file?: Express.Multer.File,): Promise<string> {
       let filename = "";
-      if(file){
+      console.log("file", file)
+      if(file && file != undefined){
         filename = file.filename;
       }
       const url = `${request.protocol}://${request.get('host')}`;
-      const imageUrl = url + "/images/" + file.filename;
+      const imageUrl = url + "/images/" + filename;
       return this._blogService.updateBlog(blogId, imageUrl, filename, updateBlogDto);
     }
     
