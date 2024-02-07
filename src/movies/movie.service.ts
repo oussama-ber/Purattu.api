@@ -10,37 +10,21 @@ import { Movie } from './models/movie.entity';
 import { CreateMovieDto, FetchMovieDto } from './models/movie.dto';
 import * as fs from 'fs';
 export interface IMoviesService {
+  fetchLastestMovies(): Promise<Movie[]>;
   getAllMovies(movieDTO: FetchMovieDto): Promise<Movie[]>;
   getSpecificMovie(movieId: string): Promise<Movie>;
-  insertMovie(
-    createMovieDto: CreateMovieDto,
-    imageUrl: string,
-    imagePath: string,
-  ): Promise<string>;
-  updateMovie(
-    movieId: string,
-    imageUrl: string,
-    imagePath: string,
-    updateMovieDto: CreateMovieDto,
-  ): Promise<string>;
+  insertMovie(createMovieDto: CreateMovieDto, imageUrl: string, imagePath: string): Promise<string>;
+  updateMovie(movieId: string, imageUrl: string, imagePath: string, updateMovieDto: CreateMovieDto): Promise<string>;
   deleteMovie(movieId: string): Promise<boolean>;
 }
 @Injectable()
 export class MoviesService implements IMoviesService {
-  constructor(
-    @InjectModel('Movie') private readonly movieModel: Model<Movie>,
-  ) {}
-  //   async fetchProducts(fetchVariables: FetchProductDto): Promise<Product[]>{
-  //     const {title, description, price} = fetchVariables;
-  //     const fetchedProducts = await this.movieModel.find({
-  //       $and: [
-  //         title && { title: { $regex: new RegExp(title, 'i') } },
-  //         description && { description: { $regex: new RegExp(description, 'i') } },
-  //         price && { price:  price},
-  //       ].filter(Boolean),
-  //     })
-  //     return fetchedProducts;
-  //   }
+  constructor(@InjectModel('Movie') private readonly movieModel: Model<Movie>) {}
+
+  async fetchLastestMovies(): Promise<Movie[]>{
+    const fetchedMovies = await this.movieModel.find().limit(4);
+    return fetchedMovies;
+  }
   async getAllMovies(movieDTO: FetchMovieDto): Promise<Movie[]> {
     const { movieStatus } = movieDTO;
     let movies;

@@ -28,11 +28,11 @@ import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 @Controller('movies')
 export class MoviessController {
   constructor(private _moviessService: MoviesService) {}
-  // @Get()
-  // async getFetchProducts(@Query() filterDto: FetchProductDto) : Promise<Product[]>{
-  //   const products = await this._productsService.fetchProducts(filterDto);
-  //   return products;
-  // }
+  @Get("lastestMovies")
+  async fetchLastestMovies() : Promise<{ movies: Movie[] }> {
+    const lastestMovies = await this._moviessService.fetchLastestMovies();
+    return { movies: lastestMovies };
+  }
   @Get()
   // @UseGuards(AuthGuard())
   async getAllMovies(@Query() filterDto: FetchMovieDto): Promise<{ movies: Movie[] }> {
@@ -44,10 +44,7 @@ export class MoviessController {
     const fetchedMovie = await this._moviessService.getSpecificMovie(movieId);
     return {movie: fetchedMovie, message: 'movie fetched successfully'};
   }
-  // @Post()
-  // async CreatMovie(@Body() createTaskDto: CreateMovieDto): Promise<string> {
-  //   return this._moviessService.insertMovie(createTaskDto);
-  // }
+
   @Post('uploadfiletest')
   @UseInterceptors(
     FileInterceptor('file', {
