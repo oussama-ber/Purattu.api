@@ -4,30 +4,27 @@ import {
   Controller,
   Delete,
   Get,
-  Header,
   Param,
   Patch,
   Post,
   Query,
-  Req,
-  UploadedFile,
-  UseInterceptors,
 } from '@nestjs/common';
 import { MoviesService } from './movie.service';
 import { Movie } from './models/movie.entity';
-import { CreateMovieDto, FetchMovieDto } from './models/movie.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { CreateMovieDto, FetchMovieDto, UpdateMovieImageDto } from './models/movie.dto';
 import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
-//   import { MoviesService } from './product.service';
-//   import { CreateProductDto, FetchProductDto, UpdateProductDto } from './models/product.dto';
-//   import { Product } from './models/product.model';
 //   import { AuthGuard } from '@nestjs/passport';
 
 @Controller('movies')
 export class MoviessController {
+  
   constructor(private _moviessService: MoviesService) {}
+
+  @Get("fetchAllMovies")
+  async fetchAllMovies() : Promise<{ movies: Movie[] }> {
+    const allMovies = await this._moviessService.getAllMovies();
+    return { movies: allMovies };
+  }
   @Get("lastestMovies")
   async fetchLastestMovies() : Promise<{ movies: Movie[] }> {
     const lastestMovies = await this._moviessService.fetchLastestMovies();
@@ -35,8 +32,8 @@ export class MoviessController {
   }
   @Get()
   // @UseGuards(AuthGuard())
-  async getAllMovies(@Query() filterDto: FetchMovieDto): Promise<{ movies: Movie[] }> {
-    const allMovies = await this._moviessService.getAllMovies(filterDto);
+  async getFilteredMovies(@Query() filterDto: FetchMovieDto): Promise<{ movies: Movie[] }> {
+    const allMovies = await this._moviessService.getAllMoviesFiltered(filterDto);
     return { movies: allMovies };
   }
   @Get('/:movieId')
@@ -45,90 +42,44 @@ export class MoviessController {
     return {movie: fetchedMovie, message: 'movie fetched successfully'};
   }
 
-  @Post('uploadfiletest')
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: diskStorage({
-        destination: './files',
-        filename: (req, file, callback) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
-          const filename = `${file.originalname}-${uniqueSuffix}.${ext}`;
-          callback(null, filename);
-        },
-      }),
-    }),
-  )
-  async uploadfiletest(
-    @UploadedFile() file: Express.Multer.File,
-  ): Promise<string> {
-    return file.originalname;
-  }
-
   @Post('createMovie')
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: diskStorage({
-        destination: './files',
-        filename: (req, file, callback) => {
-          const ext = extname(file.originalname);
-          // Get the name without extension
-          const fileNameWithoutExt = file.originalname.replace(/\.[^/.]+$/, "");
-
-          const name = fileNameWithoutExt.toLowerCase().split(" ").join("-");
-          const filename = `${name}-${Date.now()}${ext}`;
-          callback(null, filename);
-        },
-      }),
-    }),
-  )
-  @Header('Content-Type', 'text/plain') // Set the Content-Type header to text/plain
-  async createMoviefiletest(
-    @Req() request,
-    @Body() createMovieDto: CreateMovieDto,
-    @UploadedFile() file?: Express.Multer.File,
-  ): Promise<{ filename: string , message: string}> {
+  async createMoviefile(@Body() createMovieDto: CreateMovieDto): Promise<{ createdMovieId: string , message: string}> {
     try {
-      const url = `${request.protocol}://${request.get('host')}`;
-      const imageUrl = url + "/images/" + file.filename;
-      const test = this._moviessService.insertMovie(createMovieDto, imageUrl, file.filename);
+      const createdMovieId = this._moviessService.insertMovie(createMovieDto);
       let message = 'movie created successfully';
-      if((await test).length <= 0){
+      if((await createdMovieId).length <= 0){
         message = 'something went wrong'
       }
-      return { filename: file.originalname, message: message };
+      return { createdMovieId: (await createdMovieId), message: message };
     } catch (error) {
       console.error('error', error);
       throw new ExceptionsHandler();
     }
   }
 
-  @Patch('/:movieId')
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: diskStorage({
-        destination: './files',
-        filename: (req, file, callback) => {
-          const ext = extname(file.originalname);
-          // Get the name without extension
-          const fileNameWithoutExt = file.originalname.replace(/\.[^/.]+$/, "");
-
-          const name = fileNameWithoutExt.toLowerCase().split(" ").join("-");
-          const filename = `${name}-${Date.now()}${ext}`;
-          callback(null, filename);
-        },
-      }),
-    }),
-  )
-  async UpdateMovie(@Req() request,@Param('movieId') movieId: string,@UploadedFile() file: Express.Multer.File, @Body() updateMovieDto: CreateMovieDto): Promise<string> {
-    let filename = "";
-    if(file && file != undefined){
-      filename = file.filename;
+  @Post('insertMovieImage')
+  async InsertMovieImage(@Body() updateMovieImageDto: UpdateMovieImageDto): Promise<{updatedMovieId: string, message: string}> {
+    try {
+      const updatedMovieId = this._moviessService.insertMovieImage(updateMovieImageDto);
+      let message = 'movies image updated successfully';
+      if((await updatedMovieId).length <= 0){
+        message = 'something went wrong'
+      }
+      return { updatedMovieId: (await updatedMovieId), message };
+    } catch (error) {
+      console.error('error', error);
+      throw new ExceptionsHandler();
     }
-    const url = `${request.protocol}://${request.get('host')}`;
-    const imageUrl = url + "/images/" + filename;
-    return this._moviessService.updateMovie(movieId, imageUrl, filename, updateMovieDto);
+  }
+
+  @Patch('/:movieId')   
+  async UpdateMovie(@Param('movieId') movieId: string, @Body() updateMovieDto: CreateMovieDto): Promise<{updatedMovieId: string, message: string}> {
+    const updatedMovieId =  this._moviessService.updateMovie(movieId, updateMovieDto);
+    let message = 'movie updated successfully';
+      if((await updatedMovieId).length <= 0){
+        message = 'something went wrong'
+      }
+      return { updatedMovieId: (await updatedMovieId), message };
   }
   @Delete('/:movieId')
   async DeleteMovie(@Param('movieId') movieId: string): Promise<boolean> {

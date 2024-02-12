@@ -7,14 +7,15 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Movie } from './models/movie.entity';
-import { CreateMovieDto, FetchMovieDto } from './models/movie.dto';
-import * as fs from 'fs';
+import { CreateMovieDto, FetchMovieDto, UpdateMovieImageDto } from './models/movie.dto';
 export interface IMoviesService {
   fetchLastestMovies(): Promise<Movie[]>;
-  getAllMovies(movieDTO: FetchMovieDto): Promise<Movie[]>;
+  getAllMovies(): Promise<Movie[]>;
+  getAllMoviesFiltered(movieDTO: FetchMovieDto): Promise<Movie[]>;
   getSpecificMovie(movieId: string): Promise<Movie>;
-  insertMovie(createMovieDto: CreateMovieDto, imageUrl: string, imagePath: string): Promise<string>;
-  updateMovie(movieId: string, imageUrl: string, imagePath: string, updateMovieDto: CreateMovieDto): Promise<string>;
+  insertMovie(createMovieDto: CreateMovieDto): Promise<string>;
+  insertMovieImage(updateMovieImageDto: UpdateMovieImageDto): Promise<string>;
+  updateMovie(movieId: string, updateMovieDto: CreateMovieDto): Promise<string>;
   deleteMovie(movieId: string): Promise<boolean>;
 }
 @Injectable()
@@ -22,10 +23,53 @@ export class MoviesService implements IMoviesService {
   constructor(@InjectModel('Movie') private readonly movieModel: Model<Movie>) {}
 
   async fetchLastestMovies(): Promise<Movie[]>{
-    const fetchedMovies = await this.movieModel.find().limit(4);
-    return fetchedMovies;
+    const fetchedMovies = await this.movieModel.find().limit(4).exec();
+    return fetchedMovies.map((movie) => ({
+      id: movie.id,
+      title: movie.title,
+      story: movie.story,
+      director: movie.director,
+      coProducer: movie.coProducer,
+      writer: movie.writer,
+      associateProducer: movie.associateProducer,
+      cast: movie.cast,
+      contriesOfOrigin: movie.contriesOfOrigin,
+      dop: movie.dop,
+      releaseDate: movie.releaseDate,
+      music: movie.music,
+      runningTime: movie.runningTime,
+      producer: movie.producer,
+      status: movie.status,
+      awards: movie.awards,
+      imagePath: movie.imageUrl,
+    })) as Movie[];
   }
-  async getAllMovies(movieDTO: FetchMovieDto): Promise<Movie[]> {
+  async getAllMovies(): Promise<Movie[]> {
+    const movies = await this.movieModel.find().exec();
+    if (movies.length == 0) {
+      throw new NotFoundException('No movies found.');
+    }
+    return movies.map((movie) => ({
+      id: movie.id,
+      title: movie.title,
+      story: movie.story,
+      director: movie.director,
+      coProducer: movie.coProducer,
+      writer: movie.writer,
+      associateProducer: movie.associateProducer,
+      cast: movie.cast,
+      contriesOfOrigin: movie.contriesOfOrigin,
+      dop: movie.dop,
+      releaseDate: movie.releaseDate,
+      music: movie.music,
+      runningTime: movie.runningTime,
+      producer: movie.producer,
+      status: movie.status,
+      awards: movie.awards,
+      imagePath: movie.imageUrl,
+    })) as Movie[];
+  }
+  async getAllMoviesFiltered(movieDTO: FetchMovieDto): Promise<Movie[]> {
     const { movieStatus } = movieDTO;
     let movies;
     if(movieStatus && movieStatus.length > 0){
@@ -78,18 +122,11 @@ export class MoviesService implements IMoviesService {
       imagePath: fetchedMovie.imageUrl,
     } as Movie;
   }
-  public async insertMovie(
-    createMovieDto: CreateMovieDto,
-    imageUrl: string,
-    imagePath: string,
-  ): Promise<string> {
+  public async insertMovie(createMovieDto: CreateMovieDto): Promise<string> {
     try {
-      const coProducersArray: string[] =
-        createMovieDto.coProducer.split(/\s*,\s*/);
-      const associateProducerArray: string[] =
-        createMovieDto.associateProducer.split(/\s*,\s*/);
-      const contriesOfOriginArray: string[] =
-        createMovieDto.contriesOfOrigin.split(/\s*,\s*/);
+      const coProducersArray: string[] = createMovieDto.coProducer.split(/\s*,\s*/);
+      const associateProducerArray: string[] = createMovieDto.associateProducer.split(/\s*,\s*/);
+      const contriesOfOriginArray: string[] = createMovieDto.contriesOfOrigin.split(/\s*,\s*/);
       const castsArray: string[] = createMovieDto.cast.split(/\s*,\s*/);
       const producerArray: string[] = createMovieDto.producer.split(/\s*,\s*/);
       
@@ -109,9 +146,6 @@ export class MoviesService implements IMoviesService {
         producer: producerArray,
         status: createMovieDto.status,
         awards: createMovieDto.awards,
-
-        imagePath: imagePath,
-        imageUrl: imageUrl,
       });
       const generatedMovieId = await newMovie.save();
       return generatedMovieId.id as string;
@@ -120,18 +154,19 @@ export class MoviesService implements IMoviesService {
       throw new BadRequestException('something went wrong');
     }
   }
-  async updateMovie(
-    movieId: string,
-    imageUrl: string,
-    imagePath: string,
-    updateMovieDto: CreateMovieDto,
-  ): Promise<string> {
-    const coProducersArray: string[] =
-      updateMovieDto.coProducer.split(/\s*,\s*/);
-    const associateProducerArray: string[] =
-      updateMovieDto.associateProducer.split(/\s*,\s*/);
-    const contriesOfOriginArray: string[] =
-      updateMovieDto.contriesOfOrigin.split(/\s*,\s*/);
+  public async insertMovieImage(updateMovieImageDto: UpdateMovieImageDto): Promise<string> {
+    const fetchedMovie = await this.specificMovie(updateMovieImageDto.movieId);
+    fetchedMovie.imageUrl = updateMovieImageDto.imageUrl;
+
+    const updatedMovie = await fetchedMovie.save();
+    return updatedMovie.id as string;
+
+  }
+  async updateMovie(movieId: string, updateMovieDto: CreateMovieDto): Promise<string> {
+
+    const coProducersArray: string[] = updateMovieDto.coProducer.split(/\s*,\s*/);
+    const associateProducerArray: string[] = updateMovieDto.associateProducer.split(/\s*,\s*/);
+    const contriesOfOriginArray: string[] = updateMovieDto.contriesOfOrigin.split(/\s*,\s*/);
     const castsArray: string[] = updateMovieDto.cast.split(/\s*,\s*/);
     const producerArray: string[] = updateMovieDto.producer.split(/\s*,\s*/);
 
@@ -151,22 +186,6 @@ export class MoviesService implements IMoviesService {
     fetchedMovie.producer = producerArray;
     fetchedMovie.status = updateMovieDto.status;
     fetchedMovie.awards = updateMovieDto.awards;
-    if (imagePath && imagePath.length > 0) {
-      if (fs.existsSync(`files/${fetchedMovie.imagePath}`)) {
-        try {
-          // Delete the file
-          await fs.unlinkSync(`files/${fetchedMovie.imagePath}`);
-          // return { message: 'File deleted successfully' };
-        } catch (error) {
-          throw new BadRequestException(
-            'exception when deleting the file',
-            error,
-          );
-        }
-      }
-      fetchedMovie.imagePath = imagePath;
-      fetchedMovie.imageUrl = imageUrl;
-    }
 
     const updatedMovie = await fetchedMovie.save();
     return updatedMovie.id as string;
@@ -176,23 +195,10 @@ export class MoviesService implements IMoviesService {
     if (!fetchmovie) {
       throw new BadRequestException('movie does not exist');
     }
-    const fetchedMovieImagePath = (await fetchmovie).imagePath;
     return await this.movieModel
       .deleteOne({ _id: movieId })
       .then((result) => {
         if (result.deletedCount > 0) {
-          if (fs.existsSync(fetchedMovieImagePath)) {
-            try {
-              // Delete the file
-              fs.unlinkSync(fetchedMovieImagePath);
-              // return { message: 'File deleted successfully' };
-            } catch (error) {
-              throw new BadRequestException(
-                'exception when deleting the file',
-                error,
-              );
-            }
-          }
           return true;
         } else {
           throw new BadRequestException('something went wrong.');
@@ -206,11 +212,10 @@ export class MoviesService implements IMoviesService {
   private async specificMovie(movieId: string): Promise<Movie> {
     let fetchedMovie;
     try {
-      fetchedMovie = await this.movieModel.findById(movieId).exec();
+      fetchedMovie = await this.movieModel.findById(movieId);
     } catch (error) {
       throw new NotFoundException('Could not found movie.');
     }
-
     if (!fetchedMovie) {
       throw new NotFoundException('Could not found movie.');
     }

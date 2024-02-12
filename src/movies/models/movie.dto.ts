@@ -32,6 +32,12 @@ export class UpdateProductDto {
   @IsNumber()
   price: number;
 }
+export class UpdateMovieImageDto {
+  @IsString()
+  movieId: string;
+  @IsString()
+  imageUrl: string;
+}
 export class FetchMovieDto {
   @IsOptional()
   movieStatus: string;

@@ -6,24 +6,16 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import * as fs from 'fs';
+// import * as fs from 'fs';
 import { Blog } from './models/blog.entity';
-import { CreateBlogDto } from './models/blog.model.dto';
+import { CreateBlogDto, UpdateBlogImageDto } from './models/blog.model.dto';
 
 export interface IBlogService {
   getAllBlogs(): Promise<Blog[]>;
   getSpecificBlog(blogId: string): Promise<Blog>;
-  insertBlog(
-    createBlogDto: CreateBlogDto,
-    imageUrl: string,
-    imagePath: string,
-  ): Promise<string>;
-  updateBlog(
-    blogId: string,
-    imageUrl: string,
-    imagePath: string,
-    updateBlogDto: CreateBlogDto,
-  ): Promise<string>;
+  insertBlog(createBlogDto: CreateBlogDto): Promise<string>;
+  insertBlogImage(updateBlogImageDto: UpdateBlogImageDto): Promise<string>;
+  updateBlog(blogId: string, updateBlogDto: CreateBlogDto): Promise<string>;
   deleteBlog(blogId: string): Promise<boolean>;
 }
 
@@ -53,19 +45,12 @@ export class BlogService implements IBlogService {
       imagePath: fetchedBlog.imageUrl,
     } as Blog;
   }
-  public async insertBlog(
-    createBlogDto: CreateBlogDto,
-    imageUrl: string,
-    imagePath: string,
-  ): Promise<string> {
+  public async insertBlog(createBlogDto: CreateBlogDto): Promise<string> {
     try {
       const newBlog = new this.blogModel({
         title: createBlogDto.title,
         description: createBlogDto.description,
         link: createBlogDto.link,
-
-        imagePath: imagePath,
-        imageUrl: imageUrl,
 
         createdBy: createBlogDto.createdBy,
         createdDate: Date.now(),
@@ -79,59 +64,33 @@ export class BlogService implements IBlogService {
       throw new BadRequestException('something went wrong');
     }
   }
-  async updateBlog(
-    blogId: string,
-    imageUrl: string,
-    imagePath: string,
-    updateBlogDto: CreateBlogDto,
-  ): Promise<string> {
+  async updateBlog(blogId: string, updateBlogDto: CreateBlogDto): Promise<string> {
     const fetchedBlog = await this.specificBlog(blogId);
     fetchedBlog.title = updateBlogDto.title;
     fetchedBlog.description = updateBlogDto.description;
     fetchedBlog.link = updateBlogDto.link;
     fetchedBlog.createdBy = updateBlogDto.createdBy;
-    if (imagePath && imagePath.length > 0) {
-      if (fs.existsSync(`files/${fetchedBlog.imagePath}`)) {
-        try {
-          // Delete the file
-          await fs.unlinkSync(`files/${fetchedBlog.imagePath}`);
-          // return { message: 'File deleted successfully' };
-        } catch (error) {
-          throw new BadRequestException(
-            'exception when deleting the file',
-            error,
-          );
-        }
-      }
-      fetchedBlog.imagePath = imagePath;
-      fetchedBlog.imageUrl = imageUrl;
-    }
 
     const updatedBlog = await fetchedBlog.save();
     return updatedBlog.id as string;
+  }
+  public async insertBlogImage(updateBlogImageDto: UpdateBlogImageDto): Promise<string> {
+    const fetchedBlog = await this.specificBlog(updateBlogImageDto.blogId);
+    fetchedBlog.imageUrl = updateBlogImageDto.imageUrl;
+
+    const updatedBlog = await fetchedBlog.save();
+    return updatedBlog.id as string;
+
   }
   async deleteBlog(blogId: string): Promise<boolean> {
     const fetchedBlog = this.specificBlog(blogId);
     if (!fetchedBlog) {
       throw new BadRequestException('movie does not exist');
     }
-    const fetchedBlogImagePath = (await fetchedBlog).imagePath;
     return await this.blogModel
       .deleteOne({ _id: blogId })
       .then((result) => {
         if (result.deletedCount > 0) {
-          if (fs.existsSync(fetchedBlogImagePath)) {
-            try {
-              // Delete the file
-              fs.unlinkSync(fetchedBlogImagePath);
-              // return { message: 'File deleted successfully' };
-            } catch (error) {
-              throw new BadRequestException(
-                'exception when deleting the file',
-                error,
-              );
-            }
-          }
           return true;
         } else {
           throw new BadRequestException('something went wrong.');
