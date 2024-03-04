@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { IsNotEmpty, IsNumber, IsString, IsOptional  } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString, IsOptional, IsArray  } from 'class-validator';
 export class CreateMovieDto {
   @IsNotEmpty()
   title: string;
@@ -37,6 +37,12 @@ export class UpdateMovieImageDto {
   movieId: string;
   @IsString()
   imageUrl: string;
+}
+export class SaveMovieAwardImageCommand {
+  @IsString()
+  movieId: string;
+  @IsArray()
+  awardImageUrls: string[];
 }
 export class FetchMovieDto {
   @IsOptional()

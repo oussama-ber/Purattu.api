@@ -15,6 +15,7 @@ export const MovieSchema = new mongoose.Schema({
   runningTime: {type: Number},
   producer: [{type: String}],
   awards: [{type: String}],
+  awardsUrls: [{type: String}],
   status: {type: String},
   imagePath: {type: String},
   imageUrl: {type: String},
@@ -35,6 +36,7 @@ export interface Movie extends mongoose.Document {
   runningTime: number,
   producer: string[]
   awards: string[]
+  awardsUrls: string[]
   status: string;
   imagePath: string;
   imageUrl: string;

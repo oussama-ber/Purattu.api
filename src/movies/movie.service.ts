@@ -7,7 +7,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Movie } from './models/movie.entity';
-import { CreateMovieDto, FetchMovieDto, UpdateMovieImageDto } from './models/movie.dto';
+import { CreateMovieDto, FetchMovieDto, SaveMovieAwardImageCommand, UpdateMovieImageDto } from './models/movie.dto';
 export interface IMoviesService {
   fetchLastestMovies(): Promise<Movie[]>;
   getAllMovies(): Promise<Movie[]>;
@@ -119,6 +119,7 @@ export class MoviesService implements IMoviesService {
       producer: fetchedMovie.producer,
       status: fetchedMovie.status,
       awards: fetchedMovie.awards,
+      awardsUrls: fetchedMovie.awardsUrls,
       imagePath: fetchedMovie.imageUrl,
     } as Movie;
   }
@@ -157,6 +158,14 @@ export class MoviesService implements IMoviesService {
   public async insertMovieImage(updateMovieImageDto: UpdateMovieImageDto): Promise<string> {
     const fetchedMovie = await this.specificMovie(updateMovieImageDto.movieId);
     fetchedMovie.imageUrl = updateMovieImageDto.imageUrl;
+
+    const updatedMovie = await fetchedMovie.save();
+    return updatedMovie.id as string;
+
+  }
+  public async saveMovieAwardImage(saveMovieAwardImageCommand: SaveMovieAwardImageCommand): Promise<string> {
+    const fetchedMovie = await this.specificMovie(saveMovieAwardImageCommand.movieId);
+    fetchedMovie.awardsUrls = saveMovieAwardImageCommand.awardImageUrls;
 
     const updatedMovie = await fetchedMovie.save();
     return updatedMovie.id as string;

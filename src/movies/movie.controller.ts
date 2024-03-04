@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { MoviesService } from './movie.service';
 import { Movie } from './models/movie.entity';
-import { CreateMovieDto, FetchMovieDto, UpdateMovieImageDto } from './models/movie.dto';
+import { CreateMovieDto, FetchMovieDto, SaveMovieAwardImageCommand, UpdateMovieImageDto } from './models/movie.dto';
 import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 //   import { AuthGuard } from '@nestjs/passport';
 
@@ -62,6 +62,20 @@ export class MoviessController {
     try {
       const updatedMovieId = this._moviessService.insertMovieImage(updateMovieImageDto);
       let message = 'movies image updated successfully';
+      if((await updatedMovieId).length <= 0){
+        message = 'something went wrong'
+      }
+      return { updatedMovieId: (await updatedMovieId), message };
+    } catch (error) {
+      console.error('error', error);
+      throw new ExceptionsHandler();
+    }
+  }
+  @Post('saveMovieAwardImage')
+  async saveMovieAwardImage(@Body() saveMovieAwardImageCommand: SaveMovieAwardImageCommand): Promise<{updatedMovieId: string, message: string}> {
+    try {
+      const updatedMovieId = this._moviessService.saveMovieAwardImage(saveMovieAwardImageCommand);
+      let message = 'movies award images updated successfully';
       if((await updatedMovieId).length <= 0){
         message = 'something went wrong'
       }
