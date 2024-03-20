@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { MoviesService } from './movie.service';
 import { Movie } from './models/movie.entity';
-import { CreateMovieDto, FetchMovieDto, SaveMovieAwardImageCommand, UpdateMovieImageDto } from './models/movie.dto';
+import { CreateMovieDto, FetchMovieDto, GetGeneralKpisDto, SaveMovieAwardImageCommand, UpdateMovieImageDto } from './models/movie.dto';
 import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 //   import { AuthGuard } from '@nestjs/passport';
 
@@ -25,17 +25,26 @@ export class MoviessController {
     const allMovies = await this._moviessService.getAllMovies();
     return { movies: allMovies };
   }
+
   @Get("lastestMovies")
   async fetchLastestMovies() : Promise<{ movies: Movie[] }> {
     const lastestMovies = await this._moviessService.fetchLastestMovies();
     return { movies: lastestMovies };
   }
+
+  @Get('getGeneralData')
+  async GetGeneralData(): Promise<GetGeneralKpisDto> {
+    const fetchedKpis = await this._moviessService.getGeneralKpi();
+    return fetchedKpis;
+  }
+
   @Get()
   // @UseGuards(AuthGuard())
   async getFilteredMovies(@Query() filterDto: FetchMovieDto): Promise<{ movies: Movie[] }> {
     const allMovies = await this._moviessService.getAllMoviesFiltered(filterDto);
     return { movies: allMovies };
   }
+
   @Get('/:movieId')
   async GetSpecificMovie(@Param('movieId') movieId: string): Promise<{movie: Movie, message: string}> {
     const fetchedMovie = await this._moviessService.getSpecificMovie(movieId);
@@ -71,6 +80,7 @@ export class MoviessController {
       throw new ExceptionsHandler();
     }
   }
+
   @Post('saveMovieAwardImage')
   async saveMovieAwardImage(@Body() saveMovieAwardImageCommand: SaveMovieAwardImageCommand): Promise<{updatedMovieId: string, message: string}> {
     try {
@@ -95,9 +105,12 @@ export class MoviessController {
       }
       return { updatedMovieId: (await updatedMovieId), message };
   }
+  
   @Delete('/:movieId')
   async DeleteMovie(@Param('movieId') movieId: string): Promise<boolean> {
     return this._moviessService.deleteMovie(movieId);
 
   }
+
+  
 }

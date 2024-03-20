@@ -48,3 +48,10 @@ export class FetchMovieDto {
   @IsOptional()
   movieStatus: string;
 }
+export class GetGeneralKpisDto {
+  @IsNumber()
+  projects: number;
+  
+  @IsNumber()
+  featureMovies: number;
+}

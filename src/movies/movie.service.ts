@@ -7,7 +7,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Movie } from './models/movie.entity';
-import { CreateMovieDto, FetchMovieDto, SaveMovieAwardImageCommand, UpdateMovieImageDto } from './models/movie.dto';
+import { CreateMovieDto, FetchMovieDto, GetGeneralKpisDto, SaveMovieAwardImageCommand, UpdateMovieImageDto } from './models/movie.dto';
 export interface IMoviesService {
   fetchLastestMovies(): Promise<Movie[]>;
   getAllMovies(): Promise<Movie[]>;
@@ -17,10 +17,26 @@ export interface IMoviesService {
   insertMovieImage(updateMovieImageDto: UpdateMovieImageDto): Promise<string>;
   updateMovie(movieId: string, updateMovieDto: CreateMovieDto): Promise<string>;
   deleteMovie(movieId: string): Promise<boolean>;
+  getGeneralKpi(): Promise<GetGeneralKpisDto>;
 }
 @Injectable()
 export class MoviesService implements IMoviesService {
   constructor(@InjectModel('Movie') private readonly movieModel: Model<Movie>) {}
+
+  async getGeneralKpi(): Promise<GetGeneralKpisDto>{
+    try {
+      const projects = await this.movieModel.find({ status: { $in: 'In Development' } }).countDocuments().exec();
+      const featureFilms = await this.movieModel.find({ status: { $in: ['Coming soon', 'Released'] }, runningTime : { $gte: 30 } }).countDocuments().exec();
+      return {
+        projects: projects,
+        featureMovies: featureFilms
+      } as GetGeneralKpisDto;
+  
+    } catch (error) {
+      console.log("-- error: ", error);
+      throw new BadRequestException("fetching movies count failed");
+    }
+  }
 
   async fetchLastestMovies(): Promise<Movie[]>{
     const fetchedMovies = await this.movieModel.find().limit(4).exec();
@@ -44,6 +60,7 @@ export class MoviesService implements IMoviesService {
       imagePath: movie.imageUrl,
     })) as Movie[];
   }
+
   async getAllMovies(): Promise<Movie[]> {
     const movies = await this.movieModel.find().exec();
     if (movies.length == 0) {
@@ -69,6 +86,7 @@ export class MoviesService implements IMoviesService {
       imagePath: movie.imageUrl,
     })) as Movie[];
   }
+
   async getAllMoviesFiltered(movieDTO: FetchMovieDto): Promise<Movie[]> {
     const { movieStatus } = movieDTO;
     let movies;
@@ -100,6 +118,7 @@ export class MoviesService implements IMoviesService {
       imagePath: movie.imageUrl,
     })) as Movie[];
   }
+
   async getSpecificMovie(movieId: string): Promise<Movie> {
     const fetchedMovie = await this.specificMovie(movieId);
     return {
@@ -123,6 +142,7 @@ export class MoviesService implements IMoviesService {
       imagePath: fetchedMovie.imageUrl,
     } as Movie;
   }
+
   public async insertMovie(createMovieDto: CreateMovieDto): Promise<string> {
     try {
       const coProducersArray: string[] = createMovieDto.coProducer.split(/\s*,\s*/);
@@ -155,6 +175,7 @@ export class MoviesService implements IMoviesService {
       throw new BadRequestException('something went wrong');
     }
   }
+
   public async insertMovieImage(updateMovieImageDto: UpdateMovieImageDto): Promise<string> {
     const fetchedMovie = await this.specificMovie(updateMovieImageDto.movieId);
     fetchedMovie.imageUrl = updateMovieImageDto.imageUrl;
@@ -163,6 +184,7 @@ export class MoviesService implements IMoviesService {
     return updatedMovie.id as string;
 
   }
+
   public async saveMovieAwardImage(saveMovieAwardImageCommand: SaveMovieAwardImageCommand): Promise<string> {
     const fetchedMovie = await this.specificMovie(saveMovieAwardImageCommand.movieId);
     fetchedMovie.awardsUrls = saveMovieAwardImageCommand.awardImageUrls;
@@ -171,6 +193,7 @@ export class MoviesService implements IMoviesService {
     return updatedMovie.id as string;
 
   }
+
   async updateMovie(movieId: string, updateMovieDto: CreateMovieDto): Promise<string> {
 
     const coProducersArray: string[] = updateMovieDto.coProducer.split(/\s*,\s*/);
@@ -199,6 +222,7 @@ export class MoviesService implements IMoviesService {
     const updatedMovie = await fetchedMovie.save();
     return updatedMovie.id as string;
   }
+
   async deleteMovie(movieId: string): Promise<boolean> {
     const fetchmovie = this.specificMovie(movieId);
     if (!fetchmovie) {
@@ -218,6 +242,7 @@ export class MoviesService implements IMoviesService {
         throw new BadRequestException('something went wrong.');
       });
   }
+
   private async specificMovie(movieId: string): Promise<Movie> {
     let fetchedMovie;
     try {
@@ -230,4 +255,5 @@ export class MoviesService implements IMoviesService {
     }
     return fetchedMovie;
   }
+
 }
